@@ -9,10 +9,11 @@ import {
   Zap, Clock3, PanelLeftClose, BrainCircuit
 } from "lucide-react";
 
-type Section = "Overview" | "AI Assistant" | "Agents" | "Projects" | "Tasks" | "Documents" | "Knowledge Hub" | "Analytics" | "Marketplace" | "Activity" | "Settings";
+type Section = "Overview" | "AI Assistant" | "Agent Hub" | "Agents" | "Projects" | "Tasks" | "Documents" | "Knowledge Hub" | "Analytics" | "Marketplace" | "Activity" | "Settings";
 const nav: { label: Section; icon: typeof LayoutDashboard }[] = [
   { label: "Overview", icon: LayoutDashboard },
   { label: "AI Assistant", icon: MessageSquare },
+  { label: "Agent Hub", icon: Bot },
   { label: "Agents", icon: Bot },
   { label: "Projects", icon: FolderKanban },
   { label: "Tasks", icon: ListTodo },
@@ -61,6 +62,8 @@ export default function Home() {
   const [deployModal, setDeployModal] = useState(false);
   const [deployName, setDeployName] = useState("");
   const [deployRole, setDeployRole] = useState("General assistant");
+  const [hubPrompt, setHubPrompt] = useState("");
+  const [hubConversation, setHubConversation] = useState("E-commerce Marketplace");
 
   useEffect(() => {
     try {
@@ -131,6 +134,42 @@ export default function Home() {
             <div className="bottom-grid"><div className="panel assistant-panel"><div className="assistant-icon"><Sparkles size={19}/></div><div><h3>Start with your AI assistant</h3><p>Ask questions, organise ideas or plan the next move for any Altavex project.</p><button className="text-btn" onClick={()=>setSection("AI Assistant")}>Start a conversation <ArrowUpRight size={14}/></button></div></div><div className="panel activity-panel"><div className="panel-head"><div><h3>Recent activity</h3><p>Workspace updates</p></div><button className="text-btn" onClick={()=>setSection("Activity")}>See activity <ArrowUpRight size={14}/></button></div><div className="activity-line"><span className="activity-icon"><Check size={14}/></span><div><strong>Workspace foundation created</strong><small>Initial application scaffold · Just now</small></div></div><div className="activity-line"><span className="activity-icon muted"><ShieldCheck size={14}/></span><div><strong>Security-first architecture selected</strong><small>Supabase Auth and RLS planned · Today</small></div></div></div></div>
           </>}
           {section === "AI Assistant" && <div className="workspace-page"><div className="page-heading"><div className="eyebrow"><span className="gold-dot"/> ALTAVEX INTELLIGENCE</div><h1>AI Assistant</h1><p className="subheading">Your central point of contact for thinking, planning and getting work done.</p></div><div className="chat-panel"><div className="chat-top"><div className="assistant-icon"><Sparkles size={18}/></div><div><strong>Altavex Assistant</strong><span><i/> Workspace assistant · Preview mode</span></div><span className="preview-pill">MVP PREVIEW</span></div><div className="chat-messages">{messages.map((m,i)=><div key={i} className={m.role==="user"?"message user-message":"message"}><div className="message-avatar">{m.role==="user"?"K":<Sparkles size={15}/>}</div><p>{m.text}</p></div>)}</div><div className="chat-compose"><textarea value={message} onChange={e=>setMessage(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}}} placeholder="Ask Altavex anything..." rows={2}/><button className="send-btn" onClick={sendMessage} aria-label="Send message"><Send size={17}/></button></div><div className="chat-hint">AI responses are in preview mode until the model connection is configured.</div></div></div>}
+          {section === "Agent Hub" && <div className="agent-hub-shell">
+            <aside className="hub-history">
+              <div className="hub-history-head"><h2>Conversations</h2><button className="icon-btn" onClick={()=>{setHubConversation("New interaction");setNotice("New interaction started in preview mode.");}} aria-label="New conversation"><Plus size={17}/></button></div>
+              <div className="hub-history-search"><Search size={15}/><input placeholder="Search chats..." onChange={e=>setSearch(e.target.value)} value={search}/></div>
+              <div className="hub-recent-label">RECENT</div>
+              {["E-commerce Marketplace","Auth Architecture Review","Data Visualization Layer","Neural Network Config"].filter(x=>x.toLowerCase().includes(search.toLowerCase())).map((name,i)=><button key={name} className={hubConversation===name?"hub-conversation active":"hub-conversation"} onClick={()=>setHubConversation(name)}><span><strong>{name}</strong><small>{["Build an e-commerce marketplace","Refactoring the OIDC flow...","Using D3.js with React...","Hyperparameter tuning for..."][i]}</small></span><time>{["2m ago","1h ago","Yesterday","Oct 24"][i]}</time></button>)}
+              <div className="hub-profile"><div className="profile-avatar">K</div><div><strong>Workspace Owner</strong><small>Altavex Group</small></div><MoreHorizontal size={17}/></div>
+            </aside>
+            <section className="hub-chat">
+              <div className="hub-chat-head"><div><div className="hub-agent-stack"><i>PM</i><i>EN</i><i>DS</i></div><div><h2>{hubConversation}</h2><p>6 AGENTS ACTIVE · MULTI-AGENT DEPLOYMENT <span className="hub-preview-tag">PREVIEW</span></p></div></div><button className="icon-btn" onClick={()=>setNotice("Conversation sharing will be available after workspace permissions are connected.")}><ArrowUpRight size={17}/></button></div>
+              <div className="hub-chat-scroll">
+                <div className="hub-user-prompt"><span className="hub-user-icon">K</span><p>{hubConversation==="E-commerce Marketplace"?"Build an e-commerce marketplace":"Continue working on "+hubConversation}</p></div>
+                <div className="hub-orchestrator"><div className="hub-orchestrator-icon"><Bot size={19}/></div><div className="hub-orchestrator-content"><p>Initializing multi-agent swarm for project: <b>{hubConversation}</b>. Analyzing core requirements, tech stack selection, and deployment pipeline.</p>
+                  <div className="hub-agent-progress-grid">
+                    {[["PRODUCT MANAGER","Drafting PRD & User Stories","62%"],["RESEARCH","Analyzing Competitor UX","38%"],["DESIGN","Generating Design Tokens","25%"],["ENGINEER","Writing code (Schema)","12%"],["QA","Waiting for build...","0%"],["DEPLOYMENT","Provisioning Vercel...","5%"]].map(([role,status,progress])=><div className={"hub-progress-card "+role.toLowerCase().replace(" ","-")} key={role}><div><b>{role}</b><span>{progress}</span></div><p>Status: {status}</p><i><em style={{width:progress}}/></i></div>)}
+                  </div>
+                  <p className="hub-schema-intro">The Engineer agent has drafted an initial database schema. Review the structure below. This is illustrative preview content, not a deployed database.</p>
+                  <div className="hub-code-card"><div className="hub-code-head"><span><i/> <i/> <i/></span><b>schema.prisma</b><button onClick={()=>{navigator.clipboard?.writeText('model Product {\n  id          String   @id @default(cuid())\n  name        String\n  description String\n  price       Float\n  inventory   Int      @default(0)\n}');setNotice("Example schema copied.");}}><FileText size={14}/> Copy</button></div><pre>{`model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  inventory   Int      @default(0)
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  products    Product[]
+}`}</pre></div>
+                </div></div>
+              </div>
+              <div className="hub-composer"><textarea rows={2} value={hubPrompt} onChange={e=>setHubPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(hubPrompt.trim()){setNotice("Your instruction is saved in this preview. Agent execution will be enabled after AI backend integration.");setHubPrompt("");}}}} placeholder="Type instructions for Altavex swarm..."/><button className="hub-attach" onClick={()=>setNotice("File attachments will be enabled after Storage integration.")}><Plus size={18}/></button><button className="hub-send" onClick={()=>{if(hubPrompt.trim()){setNotice("Your instruction is saved in this preview. Agent execution will be enabled after AI backend integration.");setHubPrompt("");}}}><ArrowUpRight size={19}/></button></div>
+              <div className="hub-disclaimer">Altavex AI OS can make mistakes. Review critical code and actions before deployment.</div>
+            </section>
+          </div>}
           {section === "Agents" && <div className="workspace-page"><div className="page-heading"><div className="eyebrow"><span className="gold-dot"/> AGENT MANAGEMENT</div><h1>Agent workspace</h1><p className="subheading">Specialised AI roles will work together under a central orchestrator.</p></div><div className="agent-banner"><Bot size={22}/><div><strong>Orchestrator · Planned</strong><p>Coordinates requests, selects specialist agents and tracks task outcomes.</p></div><span className="status-pill">Not connected</span></div><div className="agent-grid">{agents.map(a=>{const Icon=a.icon;return <div className="agent-card" key={a.name}><div className="agent-card-icon"><Icon size={20}/></div><span className="status-pill">{a.status}</span><h3>{a.name}</h3><p>{a.role}</p><button className="text-btn" onClick={()=>setNotice(a.name+" will be configured in a later build phase.")}>Configure <ArrowUpRight size={14}/></button></div>})}</div></div>}
           {section === "Projects" && <div className="workspace-page"><div className="page-heading row-heading"><div><div className="eyebrow"><span className="gold-dot"/> WORK MANAGEMENT</div><h1>Projects</h1><p className="subheading">A shared view of initiatives across Altavex Group.</p></div><button className="primary-btn" onClick={()=>setNotice("Project creation will be connected to Supabase in the next integration step.")}><Plus size={16}/> New project</button></div><div className="project-cards">{projects.map(p=><div className="project-card" key={p.name}><div className="project-card-top"><div className="project-avatar large">{p.initials}</div><span className="status-pill">{p.status}</span></div><h3>{p.name}</h3><p>{p.division}</p><div className="progress-label"><span>Progress</span><strong>{p.progress}%</strong></div><div className="progress-track"><i style={{width:p.progress+"%"}}/></div></div>)}</div></div>}
           {section === "Tasks" && <div className="workspace-page"><div className="page-heading row-heading"><div><div className="eyebrow"><span className="gold-dot"/> WORK MANAGEMENT</div><h1>Tasks</h1><p className="subheading">Keep priorities visible and move work forward.</p></div><button className="primary-btn" onClick={()=>setTaskModal(true)}><Plus size={16}/> New task</button></div><div className="filter-row"><div className="search-box"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search tasks"/></div><select value={selectedProject} onChange={e=>setSelectedProject(e.target.value)}><option>All projects</option>{projects.map(p=><option key={p.name}>{p.name}</option>)}</select></div><div className="panel task-panel"><div className="task-list">{visibleTasks.map(t=><div className="task-row" key={t.title}><button className={t.status==="Done"?"task-check checked":"task-check"} onClick={()=>toggleTask(t.title)}>{t.status==="Done"&&<Check size={12}/>}</button><div className="task-info"><strong className={t.status==="Done"?"done":""}>{t.title}</strong><span>{t.project}</span></div><span className={t.status==="Done"?"status-pill done-pill":"status-pill"}>{t.status}</span><span className="task-due">{t.due}</span></div>)}</div>{visibleTasks.length===0&&<div className="empty-state">No matching tasks. Try another search or add a task.</div>}</div></div>}
