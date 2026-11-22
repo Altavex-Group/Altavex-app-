@@ -54,6 +54,7 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [selectedProject, setSelectedProject] = useState("All projects");
   const [installedAgents, setInstalledAgents] = useState<string[]>([]);
+  const [storageReady, setStorageReady] = useState(false);
   const [marketSearch, setMarketSearch] = useState("");
   const [marketCategory, setMarketCategory] = useState("All");
   const [marketCart, setMarketCart] = useState(false);
@@ -68,9 +69,10 @@ export default function Home() {
       if (savedTasks) setTasks(JSON.parse(savedTasks));
       if (savedAgents) setInstalledAgents(JSON.parse(savedAgents));
     } catch { /* keep the starter workspace state */ }
+    setStorageReady(true);
   }, []);
-  useEffect(() => { localStorage.setItem("altavex-tasks", JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem("altavex-installed-agents", JSON.stringify(installedAgents)); }, [installedAgents]);
+  useEffect(() => { if (storageReady) localStorage.setItem("altavex-tasks", JSON.stringify(tasks)); }, [tasks, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("altavex-installed-agents", JSON.stringify(installedAgents)); }, [installedAgents, storageReady]);
 
   const filteredMarketplaceAgents = marketplaceAgents.filter(a =>
     (marketCategory === "All" || a.category === marketCategory) &&
