@@ -45,6 +45,7 @@ export default function Home() {
   const [section, setSection] = useState<Section>("Overview");
   const [tasks, setTasks] = useState(initialTasks);
   const [message, setMessage] = useState("");
+  const [orchestratorBusy, setOrchestratorBusy] = useState(false);
   const [messages, setMessages] = useState<{role:"assistant"|"user"; text:string}[]>([
     { role: "assistant", text: "Welcome to Altavex AI OS. I'm your central assistant. I can help organise projects, plan work and answer questions. AI model connection is the next integration step." }
   ]);
@@ -100,11 +101,38 @@ export default function Home() {
     setTasks([{ title: newTask.trim(), project: "Altavex AI OS", status: "Planned", due: "Unscheduled" }, ...tasks]);
     setNewTask(""); setTaskModal(false); setNotice("Task added to your workspace.");
   }
+  async function askOrchestrator(prompt: string) {
+    const clean = prompt.trim();
+    if (!clean || orchestratorBusy) return;
+    const history = [...messages, { role: "user" as const, text: clean }];
+    setMessages(history);
+    setOrchestratorBusy(true);
+    try {
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history.map(item => ({ role: item.role, content: item.text })) }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "The Orchestrator request failed.");
+      setMessages(current => [...current, { role: "assistant", text: data.reply }]);
+    } catch (error) {
+      setMessages(current => [...current, { role: "assistant", text: error instanceof Error ? error.message : "Could not reach the Orchestrator." }]);
+    } finally {
+      setOrchestratorBusy(false);
+    }
+  }
   function sendMessage() {
-    if (!message.trim()) return;
-    const text = message.trim();
-    setMessages([...messages, { role: "user", text }, { role: "assistant", text: "I have received your request. The live AI connection is not configured yet. Once the OpenAI API and secure server route are connected, I will be able to reason over your workspace and use approved tools." }]);
+    if (!message.trim() || orchestratorBusy) return;
+    const prompt = message;
     setMessage("");
+    void askOrchestrator(prompt);
+  }
+  function sendHubPrompt() {
+    if (!hubPrompt.trim() || orchestratorBusy) return;
+    const prompt = hubPrompt;
+    setHubPrompt("");
+    void askOrchestrator(prompt);
   }
   function toggleTask(title: string) {
     setTasks(tasks.map(t => t.title === title ? { ...t, status: t.status === "Done" ? "Planned" : "Done" } : t));
@@ -133,7 +161,7 @@ export default function Home() {
             <div className="section-grid"><div className="panel"><div className="panel-head"><div><h3>Priority tasks</h3><p>Your next actions</p></div><button className="text-btn" onClick={() => setSection("Tasks")}>View all <ArrowUpRight size={14}/></button></div><div className="task-list">{tasks.slice(0,4).map((t,i)=><div className="task-row" key={t.title}><button className={t.status==="Done"?"task-check checked":"task-check"} onClick={()=>toggleTask(t.title)}>{t.status==="Done"&&<Check size={12}/>}</button><div className="task-info"><strong className={t.status==="Done"?"done":""}>{t.title}</strong><span>{t.project}</span></div><span className="task-due">{t.due}</span></div>)}</div></div><div className="panel"><div className="panel-head"><div><h3>Project overview</h3><p>Progress across divisions</p></div><button className="text-btn" onClick={()=>setSection("Projects")}>View all <ArrowUpRight size={14}/></button></div><div className="project-list">{projects.slice(0,3).map(p=><div className="project-row" key={p.name}><div className="project-avatar">{p.initials}</div><div className="project-main"><div className="project-title"><strong>{p.name}</strong><span>{p.progress}%</span></div><div className="progress-track"><i style={{width:p.progress+"%"}}/></div><small>{p.division}</small></div></div>)}</div></div></div>
             <div className="bottom-grid"><div className="panel assistant-panel"><div className="assistant-icon"><Sparkles size={19}/></div><div><h3>Start with your AI assistant</h3><p>Ask questions, organise ideas or plan the next move for any Altavex project.</p><button className="text-btn" onClick={()=>setSection("AI Assistant")}>Start a conversation <ArrowUpRight size={14}/></button></div></div><div className="panel activity-panel"><div className="panel-head"><div><h3>Recent activity</h3><p>Workspace updates</p></div><button className="text-btn" onClick={()=>setSection("Activity")}>See activity <ArrowUpRight size={14}/></button></div><div className="activity-line"><span className="activity-icon"><Check size={14}/></span><div><strong>Workspace foundation created</strong><small>Initial application scaffold · Just now</small></div></div><div className="activity-line"><span className="activity-icon muted"><ShieldCheck size={14}/></span><div><strong>Security-first architecture selected</strong><small>Supabase Auth and RLS planned · Today</small></div></div></div></div>
           </>}
-          {section === "AI Assistant" && <div className="workspace-page"><div className="page-heading"><div className="eyebrow"><span className="gold-dot"/> ALTAVEX INTELLIGENCE</div><h1>AI Assistant</h1><p className="subheading">Your central point of contact for thinking, planning and getting work done.</p></div><div className="chat-panel"><div className="chat-top"><div className="assistant-icon"><Sparkles size={18}/></div><div><strong>Altavex Assistant</strong><span><i/> Workspace assistant · Preview mode</span></div><span className="preview-pill">MVP PREVIEW</span></div><div className="chat-messages">{messages.map((m,i)=><div key={i} className={m.role==="user"?"message user-message":"message"}><div className="message-avatar">{m.role==="user"?"K":<Sparkles size={15}/>}</div><p>{m.text}</p></div>)}</div><div className="chat-compose"><textarea value={message} onChange={e=>setMessage(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}}} placeholder="Ask Altavex anything..." rows={2}/><button className="send-btn" onClick={sendMessage} aria-label="Send message"><Send size={17}/></button></div><div className="chat-hint">AI responses are in preview mode until the model connection is configured.</div></div></div>}
+          {section === "AI Assistant" && <div className="workspace-page"><div className="page-heading"><div className="eyebrow"><span className="gold-dot"/> ALTAVEX INTELLIGENCE</div><h1>AI Assistant</h1><p className="subheading">Your central point of contact for thinking, planning and getting work done.</p></div><div className="chat-panel"><div className="chat-top"><div className="assistant-icon"><Sparkles size={18}/></div><div><strong>Altavex Assistant</strong><span><i/> Workspace assistant · Preview mode</span></div><span className="preview-pill">MVP PREVIEW</span></div><div className="chat-messages">{messages.map((m,i)=><div key={i} className={m.role==="user"?"message user-message":"message"}><div className="message-avatar">{m.role==="user"?"K":<Sparkles size={15}/>}</div><p>{m.text}</p></div>)}</div><div className="chat-compose"><textarea value={message} onChange={e=>setMessage(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}}} placeholder="Ask Altavex anything..." rows={2}/><button className="send-btn" onClick={sendMessage} disabled={orchestratorBusy} aria-label="Send message"><Send size={17}/></button></div><div className="chat-hint">{orchestratorBusy ? "Altavex Orchestrator is thinking..." : "Specialist delegation is supervised. Proposed actions require your review."}</div></div></div>}
           {section === "Agent Hub" && <div className="agent-hub-shell">
             <aside className="hub-history">
               <div className="hub-history-head"><h2>Conversations</h2><button className="icon-btn" onClick={()=>{setHubConversation("New interaction");setNotice("New interaction started in preview mode.");}} aria-label="New conversation"><Plus size={17}/></button></div>
@@ -143,14 +171,14 @@ export default function Home() {
               <div className="hub-profile"><div className="profile-avatar">K</div><div><strong>Workspace Owner</strong><small>Altavex Group</small></div><MoreHorizontal size={17}/></div>
             </aside>
             <section className="hub-chat">
-              <div className="hub-chat-head"><div><div className="hub-agent-stack"><i>PM</i><i>EN</i><i>DS</i></div><div><h2>{hubConversation}</h2><p>6 AGENTS ACTIVE · MULTI-AGENT DEPLOYMENT <span className="hub-preview-tag">PREVIEW</span></p></div></div><button className="icon-btn" onClick={()=>setNotice("Conversation sharing will be available after workspace permissions are connected.")}><ArrowUpRight size={17}/></button></div>
+              <div className="hub-chat-head"><div><div className="hub-agent-stack"><i>PM</i><i>EN</i><i>DS</i></div><div><h2>{hubConversation}</h2><p>CENTRAL ORCHESTRATOR · SPECIALIST TEAM <span className="hub-preview-tag">SUPERVISED</span></p></div></div><button className="icon-btn" onClick={()=>setNotice("Conversation sharing will be available after workspace permissions are connected.")}><ArrowUpRight size={17}/></button></div>
               <div className="hub-chat-scroll">
                 <div className="hub-user-prompt"><span className="hub-user-icon">K</span><p>{hubConversation==="E-commerce Marketplace"?"Build an e-commerce marketplace":"Continue working on "+hubConversation}</p></div>
                 <div className="hub-orchestrator"><div className="hub-orchestrator-icon"><Bot size={19}/></div><div className="hub-orchestrator-content"><p>Initializing multi-agent swarm for project: <b>{hubConversation}</b>. Analyzing core requirements, tech stack selection, and deployment pipeline.</p>
                   <div className="hub-agent-progress-grid">
                     {[["PRODUCT MANAGER","Drafting PRD & User Stories","62%"],["RESEARCH","Analyzing Competitor UX","38%"],["DESIGN","Generating Design Tokens","25%"],["ENGINEER","Writing code (Schema)","12%"],["QA","Waiting for build...","0%"],["DEPLOYMENT","Provisioning Vercel...","5%"]].map(([role,status,progress])=><div className={"hub-progress-card "+role.toLowerCase().replace(" ","-")} key={role}><div><b>{role}</b><span>{progress}</span></div><p>Status: {status}</p><i><em style={{width:progress}}/></i></div>)}
                   </div>
-                  <p className="hub-schema-intro">The Engineer agent has drafted an initial database schema. Review the structure below. This is illustrative preview content, not a deployed database.</p>
+                  <p className="hub-schema-intro">Specialist assignments below illustrate the team structure. The Orchestrator will propose work for review. No background agents are running yet.</p>
                   <div className="hub-code-card"><div className="hub-code-head"><span><i/> <i/> <i/></span><b>schema.prisma</b><button onClick={()=>{navigator.clipboard?.writeText('model Product {\n  id          String   @id @default(cuid())\n  name        String\n  description String\n  price       Float\n  inventory   Int      @default(0)\n}');setNotice("Example schema copied.");}}><FileText size={14}/> Copy</button></div><pre>{`model Product {
   id          String   @id @default(cuid())
   name        String
@@ -166,8 +194,8 @@ model Category {
 }`}</pre></div>
                 </div></div>
               </div>
-              <div className="hub-composer"><textarea rows={2} value={hubPrompt} onChange={e=>setHubPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(hubPrompt.trim()){setNotice("Your instruction is saved in this preview. Agent execution will be enabled after AI backend integration.");setHubPrompt("");}}}} placeholder="Type instructions for Altavex swarm..."/><button className="hub-attach" onClick={()=>setNotice("File attachments will be enabled after Storage integration.")}><Plus size={18}/></button><button className="hub-send" onClick={()=>{if(hubPrompt.trim()){setNotice("Your instruction is saved in this preview. Agent execution will be enabled after AI backend integration.");setHubPrompt("");}}}><ArrowUpRight size={19}/></button></div>
-              <div className="hub-disclaimer">Altavex AI OS can make mistakes. Review critical code and actions before deployment.</div>
+              <div className="hub-composer"><textarea rows={2} value={hubPrompt} onChange={e=>setHubPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendHubPrompt();}}} placeholder="Type instructions for Altavex swarm..."/><button className="hub-attach" onClick={()=>setNotice("File attachments will be enabled after Storage integration.")}><Plus size={18}/></button><button className="hub-send" disabled={orchestratorBusy} onClick={sendHubPrompt}><ArrowUpRight size={19}/></button></div>
+              <div className="hub-disclaimer">{orchestratorBusy ? "Orchestrator is processing your instruction..." : "Specialist assignments are proposals. Review actions before execution."} · Add OPENAI_API_KEY to enable the live model.</div>
             </section>
           </div>}
           {section === "Agents" && <div className="workspace-page"><div className="page-heading"><div className="eyebrow"><span className="gold-dot"/> AGENT MANAGEMENT</div><h1>Agent workspace</h1><p className="subheading">Specialised AI roles will work together under a central orchestrator.</p></div><div className="agent-banner"><Bot size={22}/><div><strong>Orchestrator · Planned</strong><p>Coordinates requests, selects specialist agents and tracks task outcomes.</p></div><span className="status-pill">Not connected</span></div><div className="agent-grid">{agents.map(a=>{const Icon=a.icon;return <div className="agent-card" key={a.name}><div className="agent-card-icon"><Icon size={20}/></div><span className="status-pill">{a.status}</span><h3>{a.name}</h3><p>{a.role}</p><button className="text-btn" onClick={()=>setNotice(a.name+" will be configured in a later build phase.")}>Configure <ArrowUpRight size={14}/></button></div>})}</div></div>}
