@@ -193,6 +193,8 @@ model Category {
   products    Product[]
 }`}</pre></div>
                 </div></div>
+                {messages.length > 1 && <div className="hub-live-messages">{messages.slice(1).map((item,index)=><div key={index} className={item.role==="user"?"hub-live-message user":"hub-live-message"}><b>{item.role==="user"?"YOU":"ALTAVEX ORCHESTRATOR"}</b><p>{item.text}</p></div>)}</div>}
+                {orchestratorBusy && <div className="hub-thinking"><span/><span/><span/> Orchestrator is coordinating the request...</div>}
               </div>
               <div className="hub-composer"><textarea rows={2} value={hubPrompt} onChange={e=>setHubPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendHubPrompt();}}} placeholder="Type instructions for Altavex swarm..."/><button className="hub-attach" onClick={()=>setNotice("File attachments will be enabled after Storage integration.")}><Plus size={18}/></button><button className="hub-send" disabled={orchestratorBusy} onClick={sendHubPrompt}><ArrowUpRight size={19}/></button></div>
               <div className="hub-disclaimer">{orchestratorBusy ? "Orchestrator is processing your instruction..." : "Specialist assignments are proposals. Review actions before execution."} · Add OPENAI_API_KEY to enable the live model.</div>
