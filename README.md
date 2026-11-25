@@ -11,7 +11,7 @@ A modular command centre for Altavex Group, built with Next.js and TypeScript.
 - Documents and Knowledge Hub screens.
 - Analytics overview.
 - Agent and workflow Marketplace.
-- Tasks and installed-agent selections persist in browser local storage for this frontend-only phase.
+- Tasks and installed-agent selections persist in browser local storage for this frontend phase.
 
 ## Altavex Orchestrator
 
@@ -20,10 +20,12 @@ A server-side AI endpoint is implemented at `POST /api/agent`.
 - Uses the OpenAI Chat Completions API through the official `openai` SDK.
 - Model defaults to `gpt-4.1-mini`; override with `OPENAI_MODEL`.
 - Routes natural-language requests through a central Orchestrator.
-- Can prepare specialist assignments for Product Manager, Research Analyst, Designer, Software Engineer, QA Engineer and Operations Agent.
-- Can draft follow-up tasks and mark consequential actions as requiring approval.
+- Can assign bounded work to Product Manager, Research Analyst, Designer, Software Engineer, QA Engineer and Operations Agent specialists.
+- Specialist assignments are executed sequentially as separate model calls during the same request. Later specialists receive earlier specialist results as handoff context.
+- The Orchestrator synthesizes the specialist outputs into one response.
+- Can draft follow-up tasks and flag consequential actions for explicit approval.
 - AI Assistant and Agent Hub both call the same server endpoint.
-- API key is read only on the server and must never use a `NEXT_PUBLIC_` prefix.
+- API keys are read only on the server and must never use a `NEXT_PUBLIC_` prefix.
 
 ### Enable the live model
 
@@ -34,17 +36,17 @@ A server-side AI endpoint is implemented at `POST /api/agent`.
 
 Without the key, the API returns a clear setup message and does not expose secrets.
 
-## Important capability boundaries
+## Current capability boundaries
 
-This is the first supervised Orchestrator runtime, not a fully autonomous multi-agent platform.
+This is a synchronous, human-supervised orchestration MVP, not yet a fully autonomous multi-agent platform.
 
-- Specialist delegation is currently a structured proposal returned by the Orchestrator. No background workers execute the assignments.
-- Task proposals are not saved to a database yet.
-- Approval requests are surfaced as proposals only; no external action is performed.
+- Specialist reasoning runs during the user's API request. There are no persistent background workers or scheduled jobs.
+- Task drafts and approval requests are returned to the user; they are not saved to a database yet.
+- Approval requests do not execute external actions.
 - No persistent conversation memory or workspace context database is connected.
-- No database persistence; local browser storage is used for tasks and installed-agent selections.
-- Authentication, multi-user access, file uploads, knowledge retrieval, integrations and workflow execution are not connected.
-- Vercel deployment is pending account permissions.
+- Tasks and installed-agent selections use browser local storage.
+- Authentication, multi-user access, file uploads, knowledge retrieval, integrations and durable workflow execution are not connected.
+- Vercel deployment remains pending account permissions.
 
 ## Stack
 
